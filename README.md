@@ -1,12 +1,12 @@
 # Jadicaped
 
-Jadicaped is a RuneLite focus dimmer for Old School RuneScape. While enabled, it gently dims the client canvas while leaving the current player, TzTok-Jad, and health/prayer controls undimmed. Inventory and chat remain visible beneath the tint.
+Jadicaped is a RuneLite focus dimmer for Old School RuneScape. While enabled, it gently dims the client canvas while leaving the current player, TzTok-Jad, and health/prayer controls undimmed. Inventory and chat remain visible beneath the tint. It can enable automatically inside the Fight Caves, with a configurable hotkey override.
 
 The mask follows only the current player and Jad model silhouettes. It does not read attack animations or projectiles, recommend prayers, predict attacks, or automate input. Because the plugin is Jad-specific, Plugin Hub acceptance is not guaranteed; RuneLite has previously removed a Fight Cave helper.
 
 ## Post-Death Sidebar Summary Prototype
 
-The sidebar currently displays and exports a supplied summary object. It does not collect attempt data or populate the summary automatically; the fields below are planned, not implemented metrics.
+The sidebar is optional in the plugin's settings and currently displays/exports a supplied summary object. It does not collect attempt data or populate the summary automatically; the fields below are planned, not implemented metrics.
 
 ### Planned summary fields
 
@@ -58,5 +58,6 @@ gradle build
 ## Current limitations
 
 - The post-death sidebar is a display/export prototype; no code collects or supplies attempt data.
+- Automatic activation uses the instanced world location and has not been verified in a live Fight Caves run.
 - The focus mask has not been visually verified in a running RuneLite client or across fixed/resizable layouts.
 - Jad-specific actor cutouts require Plugin Hub review; this project does not claim approval or guaranteed compliance.

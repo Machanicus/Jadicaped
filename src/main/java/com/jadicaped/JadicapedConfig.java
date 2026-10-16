@@ -11,6 +11,7 @@ import net.runelite.client.config.Keybind;
 @ConfigGroup("jadicaped")
 public interface JadicapedConfig extends Config {
     int DEFAULT_DIM_INTENSITY = 45;
+    int REPORT_SECTION_POSITION = 20;
 
     @ConfigSection(
         name = "Focus mode",
@@ -26,10 +27,17 @@ public interface JadicapedConfig extends Config {
     )
     String ui = "ui";
 
+    @ConfigSection(
+        name = "After-action report",
+        description = "Sidebar report visibility",
+        position = REPORT_SECTION_POSITION
+    )
+    String report = "report";
+
     @ConfigItem(
         keyName = "enabled",
-        name = "Enable focus mode",
-        description = "Manually enable the Jad Focus Mode overlay.",
+        name = "Enable focus mode outside Fight Caves",
+        description = "Keep focus mode enabled outside the Fight Caves.",
         position = 1,
         section = focus
     )
@@ -49,10 +57,21 @@ public interface JadicapedConfig extends Config {
     }
 
     @ConfigItem(
+        keyName = "autoFocusInFightCaves",
+        name = "Auto-enable in Fight Caves",
+        description = "Automatically enable focus mode while inside the Fight Caves.",
+        position = 3,
+        section = focus
+    )
+    default boolean autoFocusInFightCaves() {
+        return true;
+    }
+
+    @ConfigItem(
         keyName = "dimIntensity",
         name = "Dim intensity",
         description = "The darkness of the overlay filter behind the focus reminder.",
-        position = 3,
+        position = 4,
         section = focus
     )
     default int dimIntensity() {
@@ -63,7 +82,7 @@ public interface JadicapedConfig extends Config {
         keyName = "showReminderText",
         name = "Show reminder text",
         description = "Display a neutral focus reminder.",
-        position = 4,
+        position = 5,
         section = focus
     )
     default boolean showReminderText() {
@@ -79,6 +98,17 @@ public interface JadicapedConfig extends Config {
     )
     default boolean hideChatbox() {
         return false;
+    }
+
+    @ConfigItem(
+        keyName = "showSummaryPanel",
+        name = "Show sidebar report",
+        description = "Show the post-death summary prototype in the RuneLite sidebar.",
+        position = 1,
+        section = report
+    )
+    default boolean showSummaryPanel() {
+        return true;
     }
 
 }

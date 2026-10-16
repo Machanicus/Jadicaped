@@ -9,9 +9,16 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import javax.inject.Inject;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
+import net.runelite.api.Player;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
@@ -26,6 +33,8 @@ import net.runelite.client.ui.overlay.OverlayManager;
     tags = {"jad", "fight cave", "osrs", "overlay", "focus"}
 )
 public class JadicapedPlugin extends Plugin implements KeyListener {
+    private static final int FIGHT_CAVES_REGION_ID = 9808;
+    private static final String CONFIG_GROUP = "jadicaped";
     private static final int SUMMARY_PRIORITY = 20;
     private static final int ICON_SIZE = 32;
     private static final int ICON_PADDING = 5;
@@ -66,6 +75,8 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
 
     private NavigationButton postDeathSummaryButton;
     private boolean focusModeActive;
+    private boolean insideFightCaves;
+    private Boolean manualFocusOverride;
 
     @Provides
     JadicapedConfig provideConfig(ConfigManager configManager) {
@@ -74,11 +85,11 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
 
     @Override
     protected void startUp() throws Exception {
-        focusModeActive = config.enabled();
+        insideFightCaves = isInFightCaves();
         keyManager.registerKeyListener(this);
         overlayManager.add(overlay);
-        applyUiVisibility(focusModeActive);
-        registerSummaryPanel();
+        refreshFocusMode();
+        syncSummaryPanel();
     }
 
     @Override
@@ -86,6 +97,8 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
         keyManager.unregisterKeyListener(this);
         overlayManager.remove(overlay);
         applyUiVisibility(false);
+        focusModeActive = false;
+        manualFocusOverride = null;
         unregisterSummaryPanel();
     }
 
@@ -96,8 +109,8 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         if (config.toggleKey().matches(e)) {
-            focusModeActive = !focusModeActive;
-            applyUiVisibility(focusModeActive);
+            manualFocusOverride = !focusModeActive;
+            refreshFocusMode();
         }
     }
 
@@ -105,8 +118,35 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
     public void keyReleased(KeyEvent e) {
     }
 
+    @Subscribe
+    private void onGameTick(GameTick event) {
+        final boolean nowInFightCaves = isInFightCaves();
+        if (nowInFightCaves != insideFightCaves) {
+            insideFightCaves = nowInFightCaves;
+            manualFocusOverride = null;
+        }
+        refreshFocusMode();
+    }
+
+    @Subscribe
+    private void onConfigChanged(ConfigChanged event) {
+        if (!CONFIG_GROUP.equals(event.getGroup())) {
+            return;
+        }
+
+        final String key = event.getKey();
+        if ("showSummaryPanel".equals(key)) {
+            syncSummaryPanel();
+        } else if ("hideChatbox".equals(key)) {
+            applyUiVisibility(focusModeActive);
+        } else if ("enabled".equals(key) || "autoFocusInFightCaves".equals(key)) {
+            manualFocusOverride = null;
+            refreshFocusMode();
+        }
+    }
+
     public boolean isFocusModeActive() {
-        return focusModeActive && config.enabled();
+        return focusModeActive;
     }
 
     public Client getClient() {
@@ -126,6 +166,44 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
     public void resetPostDeathSummary() {
         if (postDeathSummaryPanel != null) {
             postDeathSummaryPanel.setNoAttemptYet();
+        }
+    }
+
+    private boolean isInFightCaves() {
+        if (client.getGameState() != GameState.LOGGED_IN) {
+            return false;
+        }
+
+        final Player player = client.getLocalPlayer();
+        if (player == null) {
+            return false;
+        }
+
+        final LocalPoint localLocation = player.getLocalLocation();
+        if (localLocation == null) {
+            return false;
+        }
+
+        final WorldPoint worldPoint = WorldPoint.fromLocalInstance(client, localLocation);
+        return worldPoint != null && worldPoint.getRegionID() == FIGHT_CAVES_REGION_ID;
+    }
+
+    private void refreshFocusMode() {
+        final boolean shouldBeActive = manualFocusOverride != null
+            ? manualFocusOverride
+            : insideFightCaves ? config.autoFocusInFightCaves() : config.enabled();
+
+        if (shouldBeActive != focusModeActive) {
+            focusModeActive = shouldBeActive;
+            applyUiVisibility(focusModeActive);
+        }
+    }
+
+    private void syncSummaryPanel() {
+        if (config.showSummaryPanel()) {
+            registerSummaryPanel();
+        } else {
+            unregisterSummaryPanel();
         }
     }
 

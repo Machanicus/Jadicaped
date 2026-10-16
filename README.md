@@ -1,6 +1,6 @@
 # Jadicaped
 
-A RuneLite plugin for the TzTok-Jad phase of the Fight Caves.
+Jadicaped is a RuneLite plugin for Jad attempts in Old School RuneScape. It provides a static focus overlay and a retrospective post-death summary for prayer performance, damage, movement, resource use, and mistakes. The plugin is intentionally non-reactive and does not provide live boss assistance, automation, or prediction.
 
 This project is intentionally static and informational: the plugin shows a small in-client focus overlay and written reminders for the Jad prayer cycle, without automating inputs or making decisions for the player.
 

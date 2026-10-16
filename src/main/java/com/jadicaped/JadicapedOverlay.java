@@ -26,6 +26,7 @@ public class JadicapedOverlay extends OverlayPanel {
     private static final int OVERLAY_WIDTH = 280;
     private static final int OVERLAY_ALPHA = 180;
     private static final int MAX_DIM_ALPHA = 100;
+    private static final int REMINDER_FLASH_INTERVAL_TICKS = 2;
     private static final String JAD_NAME = "TzTok-Jad";
 
     private final JadicapedPlugin plugin;
@@ -130,6 +131,22 @@ public class JadicapedOverlay extends OverlayPanel {
         final PanelComponent panelComponent = new PanelComponent();
         panelComponent.setPreferredSize(new Dimension(OVERLAY_WIDTH, 0));
         panelComponent.setBackgroundColor(new Color(0, 0, 0, OVERLAY_ALPHA));
+
+        final boolean showJadLogoutReminder = plugin.isJadLogoutReminderActive()
+            && client.getTickCount() / REMINDER_FLASH_INTERVAL_TICKS % 2 == 0;
+        if (showJadLogoutReminder) {
+            panelComponent.setBackgroundColor(new Color(OVERLAY_ALPHA, OVERLAY_ALPHA / 6,
+                OVERLAY_ALPHA / 6, OVERLAY_ALPHA));
+            panelComponent.getChildren().add(LineComponent.builder()
+                .left("Optional break before Jad")
+                .build());
+            panelComponent.getChildren().add(LineComponent.builder()
+                .left("Request logout during wave 62")
+                .build());
+            panelComponent.getChildren().add(LineComponent.builder()
+                .left("Wave 63 waits until you return")
+                .build());
+        }
 
         panelComponent.getChildren().add(LineComponent.builder()
             .left("Jad Focus Mode")

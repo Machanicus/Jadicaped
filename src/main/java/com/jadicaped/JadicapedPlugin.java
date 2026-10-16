@@ -7,12 +7,14 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.Player;
-import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
@@ -29,11 +31,11 @@ import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
     name = "Jad Focus Mode",
-    description = "Gently dims the client while keeping Jad, the player, and health/prayer controls clear.",
+    description = "Gently dims the client while keeping Jad, the player, minimap, and interface controls clear.",
     tags = {"jad", "fight cave", "osrs", "overlay", "focus"}
 )
 public class JadicapedPlugin extends Plugin implements KeyListener {
-    private static final int FIGHT_CAVES_REGION_ID = 9808;
+    private static final int FIGHT_CAVES_REGION_ID = 9551;
     private static final String CONFIG_GROUP = "jadicaped";
     private static final int SUMMARY_PRIORITY = 20;
     private static final int ICON_SIZE = 32;
@@ -51,6 +53,11 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
     private static final int ICON_LINE_MIDDLE = 15;
     private static final int ICON_LINE_END = 21;
     private static final int ICON_LINE_X_END = 23;
+    private static final int JAD_WAVE = 63;
+    private static final int PRE_JAD_WAVE = 62;
+    private static final int JAD_REMINDER_DURATION_TICKS = 15;
+    private static final int NO_JAD_REMINDER_TICK = 0;
+    private static final Pattern FIGHT_CAVES_WAVE_MESSAGE = Pattern.compile("Wave: (\\d+)");
 
     @Inject
     private Client client;
@@ -77,6 +84,7 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
     private boolean focusModeActive;
     private boolean insideFightCaves;
     private Boolean manualFocusOverride;
+    private int jadLogoutReminderExpiresAt = NO_JAD_REMINDER_TICK;
 
     @Provides
     JadicapedConfig provideConfig(ConfigManager configManager) {
@@ -124,8 +132,30 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
         if (nowInFightCaves != insideFightCaves) {
             insideFightCaves = nowInFightCaves;
             manualFocusOverride = null;
+            if (!insideFightCaves) {
+                jadLogoutReminderExpiresAt = NO_JAD_REMINDER_TICK;
+            }
         }
         refreshFocusMode();
+    }
+
+    @Subscribe
+    private void onChatMessage(ChatMessage event) {
+        if (!insideFightCaves || event.getType() != ChatMessageType.GAMEMESSAGE) {
+            return;
+        }
+
+        final Matcher waveMatcher = FIGHT_CAVES_WAVE_MESSAGE.matcher(event.getMessage());
+        if (!waveMatcher.find()) {
+            return;
+        }
+
+        final int wave = Integer.parseInt(waveMatcher.group(1));
+        if (wave == PRE_JAD_WAVE && config.showJadLogoutReminder()) {
+            jadLogoutReminderExpiresAt = client.getTickCount() + JAD_REMINDER_DURATION_TICKS;
+        } else if (wave >= JAD_WAVE) {
+            jadLogoutReminderExpiresAt = NO_JAD_REMINDER_TICK;
+        }
     }
 
     @Subscribe
@@ -157,6 +187,12 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
         return config;
     }
 
+    public boolean isJadLogoutReminderActive() {
+        return config.showJadLogoutReminder()
+            && insideFightCaves
+            && client.getTickCount() < jadLogoutReminderExpiresAt;
+    }
+
     public void updatePostDeathSummary(PostDeathSummary summary) {
         if (postDeathSummaryPanel != null) {
             postDeathSummaryPanel.setSummary(summary);
@@ -170,22 +206,10 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
     }
 
     private boolean isInFightCaves() {
-        if (client.getGameState() != GameState.LOGGED_IN) {
-            return false;
-        }
-
-        final Player player = client.getLocalPlayer();
-        if (player == null) {
-            return false;
-        }
-
-        final LocalPoint localLocation = player.getLocalLocation();
-        if (localLocation == null) {
-            return false;
-        }
-
-        final WorldPoint worldPoint = WorldPoint.fromLocalInstance(client, localLocation);
-        return worldPoint != null && worldPoint.getRegionID() == FIGHT_CAVES_REGION_ID;
+        final int[] mapRegions = client.getMapRegions();
+        return client.getGameState() == GameState.LOGGED_IN
+            && mapRegions != null
+            && Arrays.stream(mapRegions).anyMatch(regionId -> regionId == FIGHT_CAVES_REGION_ID);
     }
 
     private void refreshFocusMode() {

@@ -90,6 +90,17 @@ public interface JadicapedConfig extends Config {
     }
 
     @ConfigItem(
+        keyName = "showJadLogoutReminder",
+        name = "Show pre-Jad logout reminder",
+        description = "Briefly remind you during wave 62 that a logout request pauses before Jad.",
+        position = 6,
+        section = focus
+    )
+    default boolean showJadLogoutReminder() {
+        return true;
+    }
+
+    @ConfigItem(
         keyName = "hideChatbox",
         name = "Hide chat messages",
         description = "Hide chat message lines while focus mode is active.",

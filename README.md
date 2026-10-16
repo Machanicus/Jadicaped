@@ -4,6 +4,10 @@ Jadicaped is a RuneLite focus dimmer for Old School RuneScape. While enabled, it
 
 The mask follows only the current player and Jad model silhouettes. It does not read attack animations or projectiles, recommend prayers, predict attacks, or automate input. Because the plugin is Jad-specific, Plugin Hub acceptance is not guaranteed; RuneLite has previously removed a Fight Cave helper.
 
+## Pre-Jad Logout Reminder
+
+When the game reports wave 62, the plugin briefly flashes an optional-break reminder before TzTok-Jad on wave 63. The reminder clears when the flash ends, wave 63 starts, or you leave the caves. The Fight Cave wiki explains that requesting logout during a wave lets it finish, then logs you out with the next wave paused until you log back in; fully logging out before the wave finishes restarts that wave. See the [Fight Cave wiki](https://oldschool.runescape.wiki/w/TzHaar_Fight_Cave) sections on Jad and logout tips for details.
+
 ## Post-Death Sidebar Summary Prototype
 
 The sidebar is optional in the plugin's settings and currently displays/exports a supplied summary object. It does not collect attempt data or populate the summary automatically; the fields below are planned, not implemented metrics.
@@ -47,7 +51,7 @@ The sidebar is optional in the plugin's settings and currently displays/exports 
 
 ## Compliance boundaries
 
-The live focus mask is a visual dimming effect only; it does not interpret combat state. The actor cutouts update with the current model positions, so maintainers must review the Jad-specific behavior before any Plugin Hub submission.
+The live focus mask identifies the local player and Jad to create transparent cutouts. It does not analyze attack animations, projectiles, or prayer state, recommend combat actions, indicate safe tiles, or automate input. The wave-62 notice uses the game's existing wave message and only explains the built-in logout pause. RuneLite previously removed a Fight Cave plugin that gave prayer guidance, so this separate Jad-specific visual feature still needs Plugin Hub review; acceptance is not guaranteed.
 
 ## Build
 

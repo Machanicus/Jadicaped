@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'checkstyle'
+}
+
+group = 'com.github.bryan'
+version = '0.1.0-initial'
+
+repositories {
+    mavenLocal()
+    maven { url = uri('https://repo.runelite.net') }
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    compileOnly group: 'net.runelite', name: 'runelite-api', version: '1.13.2'
+    compileOnly group: 'net.runelite', name: 'client', version: '1.13.2'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
+    compileOnly group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+checkstyle {
+    toolVersion = '10.19.0'
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:deprecation']
+}

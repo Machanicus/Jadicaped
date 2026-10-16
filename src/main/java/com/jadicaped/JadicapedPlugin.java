@@ -22,7 +22,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
     name = "Jad Focus Mode",
-    description = "Static, non-reactive focus aid for TzTok-Jad.",
+    description = "Gently dims the client while keeping Jad, the player, and health/prayer controls clear.",
     tags = {"jad", "fight cave", "osrs", "overlay", "focus"}
 )
 public class JadicapedPlugin extends Plugin implements KeyListener {
@@ -170,12 +170,10 @@ public class JadicapedPlugin extends Plugin implements KeyListener {
     private void applyUiVisibility(boolean active) {
         if (!active) {
             hideWidget(WidgetInfo.CHATBOX_MESSAGE_LINES, false);
-            hideWidget(WidgetInfo.INVENTORY, false);
             return;
         }
 
         hideWidget(WidgetInfo.CHATBOX_MESSAGE_LINES, config.hideChatbox());
-        hideWidget(WidgetInfo.INVENTORY, config.hideInventory());
     }
 
     private void hideWidget(WidgetInfo widgetInfo, boolean hide) {

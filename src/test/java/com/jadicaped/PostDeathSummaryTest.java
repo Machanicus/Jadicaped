@@ -1,11 +1,11 @@
 package com.jadicaped;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-class PostDeathSummaryTest {
+public class PostDeathSummaryTest {
     private static final int TEST_WAVE = 16;
     private static final int TEST_FINAL_DAMAGE = 42;
     private static final int TEST_ACCURACY = 88;
@@ -22,7 +22,7 @@ class PostDeathSummaryTest {
     private static final int TEST_CONFIDENCE = 87;
 
     @Test
-    void exportsSummaryAsPlainTextAndComputesConfidence() {
+    public void exportsSummaryAsPlainTextAndComputesConfidence() {
         final PostDeathSummary summary = PostDeathSummary.builder()
             .timeSurvived("03:14")
             .waveReached(TEST_WAVE)

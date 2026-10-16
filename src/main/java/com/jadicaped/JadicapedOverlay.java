@@ -5,8 +5,18 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
+import java.awt.geom.NoninvertibleTransformException;
 import javax.inject.Inject;
+import net.runelite.api.Actor;
+import net.runelite.api.Client;
+import net.runelite.api.NPC;
+import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.ui.overlay.OverlayPanel;
+import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.components.LineComponent;
@@ -15,25 +25,8 @@ import net.runelite.client.ui.overlay.components.PanelComponent;
 public class JadicapedOverlay extends OverlayPanel {
     private static final int OVERLAY_WIDTH = 280;
     private static final int OVERLAY_ALPHA = 180;
-    private static final int TILE_SIZE = 80;
-    private static final int DEFAULT_WIDTH = 1280;
-    private static final int DEFAULT_HEIGHT = 720;
-    private static final double BREATHING_MIN = 0.70;
-    private static final double BREATHING_DELTA = 0.30;
-    private static final double BREATHING_PERIOD_MS = 500.0;
-    private static final int MAX_DIM_ALPHA = 200;
-    private static final int PLAYER_TILE_X = 160;
-    private static final int PLAYER_TILE_Y = 120;
-    private static final int JAD_TILE_X = 200;
-    private static final int JAD_TILE_Y = 120;
-    private static final int PLAYER_TILE_RED = 0;
-    private static final int PLAYER_TILE_GREEN = 255;
-    private static final int PLAYER_TILE_BLUE = 140;
-    private static final int PLAYER_TILE_ALPHA = 180;
-    private static final int JAD_TILE_RED = 255;
-    private static final int JAD_TILE_GREEN = 70;
-    private static final int JAD_TILE_BLUE = 70;
-    private static final int JAD_TILE_ALPHA = 180;
+    private static final int MAX_DIM_ALPHA = 100;
+    private static final String JAD_NAME = "TzTok-Jad";
 
     private final JadicapedPlugin plugin;
     private final JadicapedConfig config;
@@ -44,6 +37,7 @@ public class JadicapedOverlay extends OverlayPanel {
         this.config = config;
         setPosition(OverlayPosition.TOP_LEFT);
         setPriority(OverlayPriority.HIGH);
+        setLayer(OverlayLayer.ABOVE_WIDGETS);
     }
 
     @Override
@@ -52,34 +46,34 @@ public class JadicapedOverlay extends OverlayPanel {
             return null;
         }
 
-        final Rectangle bounds = graphics.getClipBounds();
-        final int width = bounds != null ? bounds.width : DEFAULT_WIDTH;
-        final int height = bounds != null ? bounds.height : DEFAULT_HEIGHT;
-        final Graphics2D dimGraphics = (Graphics2D) graphics.create();
-        dimGraphics.setRenderingHint(
-            RenderingHints.KEY_ANTIALIASING,
-            RenderingHints.VALUE_ANTIALIAS_ON
-        );
-        int alpha = config.dimIntensity();
-        if (config.breathingAnimation()) {
-            alpha = (int) (
-                alpha * (
-                    BREATHING_MIN + BREATHING_DELTA
-                    * Math.sin(System.currentTimeMillis() / BREATHING_PERIOD_MS)
-                )
-            );
+        final Client client = plugin.getClient();
+        final Rectangle canvas = new Rectangle(client.getCanvasWidth(), client.getCanvasHeight());
+        if (canvas.isEmpty()) {
+            return null;
         }
-        dimGraphics.setColor(new Color(0, 0, 0, Math.min(alpha, MAX_DIM_ALPHA)));
-        dimGraphics.fillRect(0, 0, width, height);
-        dimGraphics.dispose();
 
-        if (config.showPlayerTile()) {
-            graphics.setColor(new Color(PLAYER_TILE_RED, PLAYER_TILE_GREEN, PLAYER_TILE_BLUE, PLAYER_TILE_ALPHA));
-            graphics.drawRect(PLAYER_TILE_X, PLAYER_TILE_Y, TILE_SIZE, TILE_SIZE);
+        final Area dimArea = new Area(canvas);
+        subtractActor(dimArea, client.getLocalPlayer());
+        for (NPC npc : client.getNpcs()) {
+            if (JAD_NAME.equals(npc.getName())) {
+                subtractActor(dimArea, npc);
+            }
         }
-        if (config.showJadTile()) {
-            graphics.setColor(new Color(JAD_TILE_RED, JAD_TILE_GREEN, JAD_TILE_BLUE, JAD_TILE_ALPHA));
-            graphics.drawRect(width - JAD_TILE_X, JAD_TILE_Y, TILE_SIZE, TILE_SIZE);
+        subtractWidget(dimArea, client, WidgetInfo.MINIMAP_HEALTH_ORB);
+        subtractWidget(dimArea, client, WidgetInfo.MINIMAP_PRAYER_ORB);
+        subtractWidget(dimArea, client, WidgetInfo.MINIMAP_PRAYER_ORB_TEXT);
+        subtractWidget(dimArea, client, WidgetInfo.MINIMAP_QUICK_PRAYER_ORB);
+
+        try {
+            final AffineTransform toLocal = graphics.getTransform().createInverse();
+            final Shape localDimArea = toLocal.createTransformedShape(dimArea);
+            final Graphics2D dimGraphics = (Graphics2D) graphics.create();
+            dimGraphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            dimGraphics.setColor(new Color(0, 0, 0, Math.max(0, Math.min(config.dimIntensity(), MAX_DIM_ALPHA))));
+            dimGraphics.fill(localDimArea);
+            dimGraphics.dispose();
+        } catch (NoninvertibleTransformException ex) {
+            return null;
         }
 
         final PanelComponent panelComponent = new PanelComponent();
@@ -91,28 +85,6 @@ public class JadicapedOverlay extends OverlayPanel {
             .right("Manual")
             .build());
 
-        panelComponent.getChildren().add(LineComponent.builder()
-            .left("Magic")
-            .right("Fireball")
-            .build());
-
-        panelComponent.getChildren().add(LineComponent.builder()
-            .left("Range")
-            .right("Stomp")
-            .build());
-
-        panelComponent.getChildren().add(LineComponent.builder()
-            .left("Hands")
-            .right("Watch only")
-            .build());
-
-        if (config.showHealerReminder()) {
-            panelComponent.getChildren().add(LineComponent.builder()
-                .left("Healers")
-                .right("Static reminder")
-                .build());
-        }
-
         if (config.showReminderText()) {
             panelComponent.getChildren().add(LineComponent.builder()
                 .left("Focus")
@@ -121,5 +93,27 @@ public class JadicapedOverlay extends OverlayPanel {
         }
 
         return panelComponent.render(graphics);
+    }
+
+    private void subtractActor(Area dimArea, Actor actor) {
+        if (actor == null) {
+            return;
+        }
+
+        final Shape hull = actor.getConvexHull();
+        if (hull != null) {
+            dimArea.subtract(new Area(hull));
+        }
+    }
+
+    private void subtractWidget(Area dimArea, Client client, WidgetInfo widgetInfo) {
+        final Widget widget = client.getWidget(widgetInfo);
+        if (widget != null && !widget.isHidden()) {
+            final Rectangle bounds = widget.getBounds();
+            if (!bounds.isEmpty()) {
+                bounds.grow(3, 3);
+                dimArea.subtract(new Area(bounds));
+            }
+        }
     }
 }

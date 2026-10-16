@@ -75,6 +75,9 @@ public class JadicapedOverlay extends OverlayPanel {
 
             if (client.isResized()) {
                 subtractWidgets(dimArea, client,
+                    WidgetInfo.RESIZABLE_VIEWPORT_INVENTORY_CONTAINER,
+                    WidgetInfo.RESIZABLE_VIEWPORT_BOTTOM_LINE_INTERFACE_CONTAINER,
+                    WidgetInfo.RESIZABLE_VIEWPORT_INTERFACE_CONTAINER,
                     WidgetInfo.RESIZABLE_VIEWPORT_COMBAT_TAB,
                     WidgetInfo.RESIZABLE_VIEWPORT_STATS_TAB,
                     WidgetInfo.RESIZABLE_VIEWPORT_QUESTS_TAB,
